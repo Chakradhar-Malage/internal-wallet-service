@@ -2,6 +2,7 @@
 require('dotenv').config();
 const express = require('express');
 const { issueBonus } = require('./services/transactions');
+const { spend } = require('./services/transactions');
 const { getUserBalance } = require('./services/balance');
 const {getAccountBalance} = require('./services/balance');
 const app = express();
@@ -49,6 +50,31 @@ app.post('/bonus', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(400).json({ error: err.message });
+  }
+});
+
+
+// Spend endpoint
+app.post('/spend', async (req, res) => {
+  try {
+    const { ownerId, amount, idempotencyKey, description } = req.body;
+
+    if (!ownerId || !amount || !idempotencyKey) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const result = await spend({
+      ownerId,
+      amount: Number(amount),
+      idempotencyKey,
+      description,
+    });
+
+    res.status(201).json(result);
+  } catch (err) {
+    console.error(err);
+    const status = err.message.includes('Insufficient') ? 400 : 500;
+    res.status(status).json({ error: err.message });
   }
 });
 
