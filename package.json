@@ -1,0 +1,39 @@
+{
+  "name": "internal-wallet-service",
+  "version": "1.0.0",
+  "description": "Venture Capital Project",
+  "homepage": "https://github.com/Chakradhar-Malage/internal-wallet-service#readme",
+  "bugs": {
+    "url": "https://github.com/Chakradhar-Malage/internal-wallet-service/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Chakradhar-Malage/internal-wallet-service.git"
+  },
+  "license": "ISC",
+  "author": "Chakradhar",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+  "start": "node src/index.js",
+  "dev": "nodemon src/index.js",
+  "migrate:make": "knex migrate:make",
+  "migrate:latest": "knex migrate:latest",
+  "migrate:rollback": "knex migrate:rollback",
+  "seed:make": "knex seed:make",
+  "seed:run": "knex seed:run",
+  "test": "jest"
+  },
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "knex": "^3.1.0",
+    "pg": "^8.18.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.2.2"
+  }
+}
