@@ -5,6 +5,7 @@ const { issueBonus } = require('./services/transactions');
 const { spend } = require('./services/transactions');
 const { getUserBalance } = require('./services/balance');
 const {getAccountBalance} = require('./services/balance');
+const { topUp } = require('./services/transactions');
 const app = express();
 
 app.use(express.json());
@@ -82,6 +83,31 @@ app.post('/spend', async (req, res) => {
 // Utility endpoint to generate UUID for idempotency keys (temp solution)
 app.get('/uuid', (req, res) => {
   res.json({ idempotencyKey: require('uuid').v4() });
+});
+
+
+app.post('/topup', async (req, res) => {
+  try {
+    const { ownerId, amount, idempotencyKey, description, paymentReference } = req.body;
+
+    if (!ownerId || !amount || !idempotencyKey) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const result = await topUp({
+      ownerId,
+      amount: Number(amount),
+      idempotencyKey,
+      description,
+      paymentReference,
+    });
+
+    res.status(201).json(result);
+  } catch (err) {
+    console.error(err);
+    const status = err.message.includes('not found') ? 404 : 400;
+    res.status(status).json({ error: err.message });
+  }
 });
 
 

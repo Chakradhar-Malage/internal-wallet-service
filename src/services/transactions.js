@@ -141,7 +141,7 @@ async function spend({
         'accounts.id as user_account_id',
         'accounts.asset_id'
       )
-      .forUpdate()               // ← KEY: pessimistic lock on user row
+      .forUpdate()         
       .first();
 
     if (!userAccount) throw new Error(`User account not found: ${ownerId}`);
@@ -153,7 +153,7 @@ async function spend({
         asset_id: userAccount.asset_id,
       })
       .select('id as treasury_account_id')
-      .forUpdate()               // ← lock treasury too
+      .forUpdate()               //lock treasury too
       .first();
 
     if (!treasuryAccount) throw new Error('Treasury not found');
@@ -205,4 +205,101 @@ async function spend({
   });
 }
 
-module.exports = { issueBonus, spend };
+/**
+ * Top-up: User purchases credits (real money → user wallet)
+ * In reality payment gateway would be called before this
+ * Here we are just adding credit from treasury
+ */
+async function topUp({
+  ownerId,
+  amount,
+  assetCode = 'GOLD',
+  idempotencyKey,
+  description = 'Purchase via real money',
+  paymentReference, //e.g. stripe charge id
+}) {
+  if (!idempotencyKey) throw new Error('idempotencyKey is required');
+  if (amount <= 0) throw new Error('Amount must be positive');
+
+  return await knex.transaction(async (trx) => {
+    // Idempotency
+    const existing = await trx('idempotency_keys')
+      .where({ key: idempotencyKey })
+      .first();
+
+    if (existing?.status === 'processed') {
+      return {
+        status: 'already_processed',
+        transactionId: existing.transaction_id,
+        message: 'Top-up already applied',
+      };
+    }
+    if (existing) {
+      throw new Error('Previous attempt failed');
+    }
+
+    // Lock accounts (same order: user first → treasury)
+    const userAccount = await trx('accounts')
+      .join('assets', 'accounts.asset_id', 'assets.id')
+      .where({
+        'accounts.owner_id': ownerId,
+        'assets.code': assetCode,
+      })
+      .select('accounts.id as user_account_id', 'accounts.asset_id')
+      .forUpdate()
+      .first();
+
+    if (!userAccount) throw new Error(`User not found: ${ownerId}`);
+
+    const treasuryAccount = await trx('accounts')
+      .where({
+        account_type: 'system',
+        name: 'Treasury',
+        asset_id: userAccount.asset_id,
+      })
+      .select('id as treasury_account_id')
+      .forUpdate()
+      .first();
+
+    if (!treasuryAccount) throw new Error('Treasury not found');
+
+    const transactionId = uuidv4();
+
+    // Ledger: debit treasury (system gives credits), credit user
+    await trx('ledger_entries').insert({
+      transaction_id: transactionId,
+      debit_account_id: treasuryAccount.treasury_account_id,
+      credit_account_id: userAccount.user_account_id,
+      amount,
+      asset_id: userAccount.asset_id,
+      type: 'topup',
+      description,
+      idempotency_key: idempotencyKey,
+      executed_at: trx.fn.now(),
+      // optional: metadata: { paymentReference }
+    });
+
+    await trx('idempotency_keys').insert({
+      key: idempotencyKey,
+      operation_type: 'topup',
+      account_id: userAccount.user_account_id,
+      transaction_id: transactionId,
+      status: 'processed',
+      created_at: trx.fn.now(),
+    });
+
+    const newBalance = await getAccountBalance(userAccount.user_account_id, trx);
+
+    return {
+      status: 'success',
+      transactionId,
+      ownerId,
+      amount,
+      newBalance,
+      asset: assetCode,
+    };
+  });
+}
+
+module.exports = { issueBonus, spend, topUp };
+
