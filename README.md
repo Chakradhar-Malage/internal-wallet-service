@@ -39,3 +39,84 @@ docker compose up -d
 
 # Stop & remove
 docker compose down
+
+```
+## Without Docker (Fallback – using your local PostgreSQL)
+
+Step 1: Create database wallet_service in pgAdmin or psql
+Step 2: Copy .env.example → .env and fill your local DB credentials
+Step 3: Install dependencies:
+  ```bash 
+          npm install 
+  ```
+Step4: Run migrations & seed:
+  ```bash
+          npm run migrate:latest
+  ```
+Step 5: 
+  ```bash
+          npm run seed:run
+  ```
+Step 6 : Start development server:
+  ```bash
+          npm run dev
+  ```
+
+## API Endpoints
+All POST endpoints require a valid idempotencyKey (UUID v4) in the request body.
+POST /topup
+JSON
+```bash
+{
+  "ownerId": "Chakradhar",
+  "amount": 1000,
+  "idempotencyKey": "550e8400-e29b-41d4-a716-446655440000",
+  "description": "First purchase"
+} 
+```
+POST /bonus
+JSON
+```bash
+{
+  "ownerId": "Chakradhar",
+  "amount": 500,
+  "idempotencyKey": "new-uuid-here",
+  "description": "Referral bonus"
+}
+```
+POST /spend
+JSON
+```bash 
+{
+  "ownerId": "Chakradhar",
+  "amount": 200,
+  "idempotencyKey": "spend-uuid-123",
+  "description": "Buy item"
+}
+```
+→ Returns 400 "Insufficient balance" if funds are insufficient
+GET /balance/:ownerId
+texthttp://localhost:3000/balance/Chakradhar
+→ { "owner": "Chakradhar", "balance": 800 }
+GET /transactions/:ownerId?limit=10&offset=0
+Paginated list of ledger entries affecting the user, including:
+
+transaction_id
+type (topup / bonus / spend)
+amount
+direction (debit / credit)
+description
+executed_at timestamp
+
+GET /health
+Simple status check.
+
+## Concurrency & Data Integrity Strategy
+
+Pessimistic locking: SELECT ... FOR UPDATE on both user and treasury account rows inside transaction
+Deadlock prevention: Always acquire locks in fixed order → user account first, then treasury
+Race condition protection: Balance sufficiency checked after locks are acquired
+Idempotency: Duplicate requests return success with "already_processed" status (no double-crediting)
+Immutability & auditability: All changes recorded as immutable ledger entries → balances computed via SUM queries
+
+This combination ensures correctness even under high concurrent load.
