@@ -22,7 +22,7 @@ exports.seed = async function(knex) {
     
 
   // 2. System account (Treasury)
-  const [treasuryId] = await knex('accounts')
+  const [{id : treasuryId}] = await knex('accounts')
     .insert({
       account_type: 'system',
       owner_id: null,
@@ -47,5 +47,39 @@ exports.seed = async function(knex) {
     }
   ]);
 
-  console.log('Seed completed: 1 asset, 1 system account, 2 user accounts created.');
+    // 4. Initial Balances (Ledger Entries)
+  const chakradharAccount = await knex('accounts')
+    .where({ owner_id: 'Chakradhar' })
+    .first();
+
+  const vinodAccount = await knex('accounts')
+    .where({ owner_id: 'Vinod' })
+    .first();
+
+  const { v4: uuidv4 } = require('uuid');
+
+  await knex('ledger_entries').insert([
+    {
+      transaction_id: uuidv4(),
+      debit_account_id: treasuryId,
+      credit_account_id: chakradharAccount.id,
+      amount: 1000.00,
+      asset_id: goldAssetId,
+      type: 'initial_bonus',
+      description: 'Initial seed balance',
+      executed_at: knex.fn.now(),
+    },
+    {
+      transaction_id: uuidv4(),
+      debit_account_id: treasuryId,
+      credit_account_id: vinodAccount.id,
+      amount: 300.00,
+      asset_id: goldAssetId,
+      type: 'initial_bonus',
+      description: 'Initial seed balance',
+      executed_at: knex.fn.now(),
+    }
+  ]);
+
+  console.log('Seed completed: 1 asset, 1 system account, 2 user accounts + initial balances created.');
 };

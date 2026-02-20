@@ -47,19 +47,19 @@ Step 1: Create database wallet_service in pgAdmin or psql
 Step 2: Copy .env.example → .env and fill your local DB credentials
 Step 3: Install dependencies:
   ```bash 
-          npm install 
+npm install 
   ```
 Step4: Run migrations & seed:
   ```bash
-          npm run migrate:latest
+npm run migrate:latest
   ```
 Step 5: 
   ```bash
-          npm run seed:run
+npm run seed:run
   ```
 Step 6 : Start development server:
   ```bash
-          npm run dev
+npm run dev
   ```
 
 ## API Endpoints
