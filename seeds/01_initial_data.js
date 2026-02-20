@@ -63,7 +63,7 @@ exports.seed = async function(knex) {
       transaction_id: uuidv4(),
       debit_account_id: treasuryId,
       credit_account_id: chakradharAccount.id,
-      amount: 1000.00,
+      amount: 799.00,
       asset_id: goldAssetId,
       type: 'initial_bonus',
       description: 'Initial seed balance',

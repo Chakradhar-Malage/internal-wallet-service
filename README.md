@@ -120,3 +120,17 @@ Idempotency: Duplicate requests return success with "already_processed" status (
 Immutability & auditability: All changes recorded as immutable ledger entries → balances computed via SUM queries
 
 This combination ensures correctness even under high concurrent load.
+
+## Concurrency Demonstration
+
+To illustrate race condition protection under concurrent requests:
+
+```bash
+# Install node-fetch if not already present (for the test script)
+npm install node-fetch --save-dev
+```
+
+Run the simple concurrency test:
+```bash
+node concurrency-test.js
+```
