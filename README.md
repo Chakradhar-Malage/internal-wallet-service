@@ -19,7 +19,7 @@ A high-traffic, ACID-compliant wallet service for virtual credits (e.g. "Gold Co
 
 | Component       | Choice              | Reason                                                                 |
 |-----------------|---------------------|------------------------------------------------------------------------|
-| Language        | Node.js 20+         | Fast async I/O, strong ecosystem, good concurrency via event loop     |
+| Language        | Node.js 22         | Fast async I/O, strong ecosystem, good concurrency via event loop     |
 | Framework       | Express             | Simple, mature, sufficient for REST API                                |
 | Database        | PostgreSQL          | Full ACID, row-level locking, serializable isolation, great for ledgers |
 | Query Builder   | Knex.js             | Safe migrations, seeds, transactions, raw SQL when needed              |
